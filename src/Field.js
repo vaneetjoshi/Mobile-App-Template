@@ -1,33 +1,62 @@
 import { useContext, useState } from 'react';
 import { FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import config from '../app-config.json';
-import { InkContext } from './ink';
+import { LinearGradient } from 'expo-linear-gradient';
+import { InkContext, SurfaceContext } from './ink';
+import { points } from './Surface';
 import { tint } from './colors';
 import { normalizeOptions } from './validation';
 
 const { theme } = config;
 
-const inputStyle = (variant, hasError, ink) => {
+const inputStyle = (variant, hasError, ink, framed) => {
   const border = hasError ? '#dc2626' : theme.secondary;
   if (variant === 'filled') return { backgroundColor: tint(ink, 0.07), borderRadius: 12, borderWidth: 1, borderColor: hasError ? '#dc2626' : 'transparent' };
-  if (variant === 'underline') return { borderBottomWidth: 1.5, borderColor: border, borderRadius: 0, paddingHorizontal: 2 };
-  if (variant === 'pill') return { borderWidth: 1, borderColor: border, borderRadius: 999, paddingHorizontal: 20 };
-  return { borderWidth: 1, borderColor: border, borderRadius: 10 };
+  if (variant === 'underline') return { borderBottomWidth: framed ? 0 : 1.5, borderColor: border, borderRadius: 0, paddingHorizontal: 2 };
+  if (variant === 'pill') return { borderWidth: framed ? 0 : 1, borderColor: border, borderRadius: 999, paddingHorizontal: 20 };
+  return { borderWidth: framed ? 0 : 1, borderColor: border, borderRadius: 10 };
 };
+
+const GRADIENT_BORDER = 1.5;
+
+function Frame({ variant, framed, surface, children }) {
+  if (!framed) return children;
+  const gradient = theme.secondary_gradient;
+  const paint = { colors: gradient.colors, locations: gradient.locations, ...points(gradient.angle) };
+
+  if (variant === 'underline') {
+    return (
+      <View>
+        {children}
+        <LinearGradient {...paint} style={{ height: GRADIENT_BORDER }} />
+      </View>
+    );
+  }
+
+  const radius = variant === 'pill' ? 999 : 10;
+  return (
+    <LinearGradient {...paint} style={{ borderRadius: radius, padding: GRADIENT_BORDER }}>
+      <View style={{ backgroundColor: surface, borderRadius: radius - GRADIENT_BORDER }}>{children}</View>
+    </LinearGradient>
+  );
+}
 
 export default function Field({ field, value, onChange, error, variant, align }) {
   const ink = useContext(InkContext) || theme.text;
+  const surface = useContext(SurfaceContext) || theme.background;
   const [hidden, setHidden] = useState(true);
   const [open, setOpen] = useState(false);
   const secure = field.type === 'password';
   const options = field.type === 'select' || field.type === 'radio' ? normalizeOptions(field.options) : null;
   const selected = options && options.find((o) => o.value === String(value));
   const keyboard = field.type === 'email' ? 'email-address' : field.type === 'number' || field.name === 'mobile' ? (field.name === 'mobile' ? 'phone-pad' : 'numeric') : 'default';
-  const box = [s.box, inputStyle(variant, !!error, ink)];
+  const framed = !!theme.secondary_gradient && !error && variant !== 'filled';
+  const box = [s.box, inputStyle(variant, !!error, ink, framed)];
 
   return (
     <View style={s.field}>
       <Text style={[s.label, { color: ink, textAlign: align }]}>{field.label}{field.required ? ' *' : ''}</Text>
+      <Frame variant={variant} framed={framed} surface={surface}>
       {options ? (
         <TouchableOpacity activeOpacity={0.8} onPress={() => setOpen(true)} style={[...box, s.select]}>
           <Text style={{ color: selected ? ink : tint(ink, 0.45) }}>{selected ? selected.label : 'Select...'}</Text>
@@ -53,6 +82,7 @@ export default function Field({ field, value, onChange, error, variant, align })
           )}
         </View>
       )}
+      </Frame>
       {!!error && <Text style={[s.error, { textAlign: align }]}>{error}</Text>}
 
       {options && (

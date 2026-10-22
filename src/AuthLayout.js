@@ -1,6 +1,6 @@
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import config from '../app-config.json';
-import { InkContext } from './ink';
+import { InkContext, SurfaceContext } from './ink';
 import Surface from './Surface';
 
 const { theme } = config;
@@ -33,7 +33,7 @@ export default function AuthLayout({ tokens, title, subtitle, children }) {
   );
 
   const inHeader = tokens.header === 'band' || tokens.header === 'curve';
-  const container = tokens.container === 'card' ? [s.card, { backgroundColor: surface }] : tokens.container === 'sheet' ? [s.sheet, { backgroundColor: surface }] : s.plain;
+  const container = tokens.container === 'card' ? s.card : tokens.container === 'sheet' ? s.sheet : s.plain;
   const inCard = tokens.container !== 'plain';
   const titleColor = inCard ? theme.card_text : onScreen;
 
@@ -48,12 +48,14 @@ export default function AuthLayout({ tokens, title, subtitle, children }) {
               {!!subtitle && <Text style={[s.subtitle, { color: theme.on_primary }]}>{subtitle}</Text>}
             </Surface>
           )}
-          <View style={[container, tokens.container !== 'sheet' && !inHeader && s.centered]}>
+          <Surface color={inCard ? surface : 'transparent'} gradient={inCard ? theme.card_gradient : null} style={[container, tokens.container !== 'sheet' && !inHeader && s.centered]}>
             <InkContext.Provider value={inCard ? theme.card_text : theme.text}>
-              {!inHeader && heading(titleColor)}
-              {children}
+              <SurfaceContext.Provider value={inCard ? surface : theme.background}>
+                {!inHeader && heading(titleColor)}
+                {children}
+              </SurfaceContext.Provider>
             </InkContext.Provider>
-          </View>
+          </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
