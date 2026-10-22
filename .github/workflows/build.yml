@@ -36,12 +36,19 @@ jobs:
       - run: npx expo prebuild --platform android --no-install
       - name: Configure signing
         run: node scripts/sign.js
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
       - name: Build
         working-directory: android
-        run: ./gradlew assembleRelease bundleRelease --no-daemon
+        run: ./gradlew assembleRelease bundleRelease --no-daemon --build-cache -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
       - name: Upload result
         run: |
           UPLOAD_URL=$(jq -r .upload_url payload.json)
-          ARGS="-F apk=@android/app/build/outputs/apk/release/app-release.apk -F aab=@android/app/build/outputs/bundle/release/app-release.aab"
-          if [ -f generated.jks ]; then ARGS="$ARGS -F keystore=@generated.jks"; fi
-          curl -fsS $ARGS "$UPLOAD_URL"
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          ls -lh "$APK" "$AAB"
+          upload() { curl -sS --fail-with-body --retry 3 --retry-delay 5 --retry-all-errors -F "$1" "$UPLOAD_URL"; }
+          if [ -f generated.jks ]; then upload "keystore=@generated.jks"; fi
+          upload "apk=@$APK"
+          upload "aab=@$AAB"
