@@ -1,0 +1,47 @@
+name: build-app
+run-name: build-${{ inputs.build_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        required: true
+        type: string
+      fetch_url:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Fetch build payload
+        run: |
+          curl -fsS "${{ inputs.fetch_url }}" -o payload.json
+          echo "::add-mask::$(jq -r .upload_token payload.json)"
+          echo "::add-mask::$(jq -r .keystore_password payload.json)"
+      - name: Prepare app
+        run: node scripts/prepare.js payload.json
+      - run: npm ci
+      - run: npx expo prebuild --platform android --no-install
+      - name: Configure signing
+        run: node scripts/sign.js
+      - name: Build
+        working-directory: android
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
+      - name: Upload result
+        run: |
+          UPLOAD_URL=$(jq -r .upload_url payload.json)
+          ARGS="-F apk=@android/app/build/outputs/apk/release/app-release.apk -F aab=@android/app/build/outputs/bundle/release/app-release.aab"
+          if [ -f generated.jks ]; then ARGS="$ARGS -F keystore=@generated.jks"; fi
+          curl -fsS $ARGS "$UPLOAD_URL"

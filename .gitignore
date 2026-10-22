@@ -1,0 +1,14 @@
+node_modules/
+android/
+ios/
+.expo/
+dist/
+app.json
+app-config.json
+payload.json
+signing.json
+*.jks
+*.keystore
+assets/icon.png
+assets/splash.png
+.env
