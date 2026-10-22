@@ -6,6 +6,7 @@ const { config } = payload;
 
 fs.mkdirSync('assets', { recursive: true });
 fs.writeFileSync('assets/icon.png', Buffer.from(payload.icon, 'base64'));
+fs.writeFileSync('assets/adaptive-icon.png', Buffer.from(payload.adaptive_icon || payload.icon, 'base64'));
 fs.writeFileSync('assets/splash.png', Buffer.from(payload.splash, 'base64'));
 fs.writeFileSync('app-config.json', JSON.stringify(config));
 
@@ -13,10 +14,10 @@ const base = JSON.parse(fs.readFileSync('app.base.json', 'utf8'));
 base.expo.name = config.app.name;
 base.expo.slug = config.app.package_id.replace(/\./g, '-');
 base.expo.icon = './assets/icon.png';
-base.expo.splash = { image: './assets/splash.png', resizeMode: 'contain', backgroundColor: config.theme.background };
+base.expo.plugins = [['expo-splash-screen', { backgroundColor: config.splash.background }]];
 base.expo.android = {
   package: config.app.package_id,
-  adaptiveIcon: { foregroundImage: './assets/icon.png', backgroundColor: config.theme.background },
+  adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: payload.adaptive_background || config.theme.background },
 };
 fs.writeFileSync('app.json', JSON.stringify(base, null, 2));
 
