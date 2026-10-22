@@ -1,4 +1,7 @@
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { isLight } from './colors';
 import config from '../app-config.json';
 import { InkContext, SurfaceContext } from './ink';
 import Surface from './Surface';
@@ -20,6 +23,7 @@ export const Button = ({ label, onPress, busy, shape }) => (
 );
 
 export default function AuthLayout({ tokens, title, subtitle, children }) {
+  const insets = useSafeAreaInsets();
   const brand = tokens.screen === 'brand';
   const surface = theme.card;
   const align = tokens.align === 'center' ? 'center' : 'left';
@@ -36,19 +40,22 @@ export default function AuthLayout({ tokens, title, subtitle, children }) {
   const container = tokens.container === 'card' ? s.card : tokens.container === 'sheet' ? s.sheet : s.plain;
   const inCard = tokens.container !== 'plain';
   const titleColor = inCard ? theme.card_text : onScreen;
+  const sheet = tokens.container === 'sheet';
+  const behind = inHeader || brand ? theme.primary : theme.background;
 
   return (
     <Surface color={brand ? theme.primary : theme.background} gradient={brand ? theme.primary_gradient : theme.background_gradient} style={s.screen}>
-    <SafeAreaView style={s.screen}>
+    <View style={[s.screen, { paddingTop: inHeader ? 0 : insets.top, paddingBottom: sheet ? 0 : insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }]}>
+      <StatusBar style={isLight(behind) ? 'dark' : 'light'} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[s.scroll, tokens.container === 'sheet' && s.scrollSheet]}>
           {inHeader && (
-            <Surface color={theme.primary} gradient={theme.primary_gradient} style={[s.header, tokens.header === 'curve' && s.headerCurve]}>
+            <Surface color={theme.primary} gradient={theme.primary_gradient} style={[s.header, tokens.header === 'curve' && s.headerCurve, { paddingTop: insets.top + 28 }]}>
               <Text style={[s.headerTitle, { color: theme.on_primary }]}>{title}</Text>
               {!!subtitle && <Text style={[s.subtitle, { color: theme.on_primary }]}>{subtitle}</Text>}
             </Surface>
           )}
-          <Surface color={inCard ? surface : 'transparent'} gradient={inCard ? theme.card_gradient : null} style={[container, tokens.container !== 'sheet' && !inHeader && s.centered]}>
+          <Surface color={inCard ? surface : 'transparent'} gradient={inCard ? theme.card_gradient : null} style={[container, tokens.container !== 'sheet' && !inHeader && s.centered, sheet && { paddingBottom: 24 + insets.bottom }]}>
             <InkContext.Provider value={inCard ? theme.card_text : theme.text}>
               <SurfaceContext.Provider value={inCard ? surface : theme.background}>
                 {!inHeader && heading(titleColor)}
@@ -58,7 +65,7 @@ export default function AuthLayout({ tokens, title, subtitle, children }) {
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
     </Surface>
   );
 }

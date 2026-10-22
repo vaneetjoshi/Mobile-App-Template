@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ToastContext = createContext(() => {});
 
@@ -29,7 +30,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={show}>
       {children}
       {toast && (
-        <SafeAreaView pointerEvents="box-none" style={s.wrap}>
+        <SafeAreaView edges={['top', 'left', 'right']} pointerEvents="box-none" style={s.wrap}>
           <Animated.View style={[s.toast, { backgroundColor: COLORS[toast.type], transform: [{ translateY: slide }] }]}>
             <TouchableOpacity activeOpacity={0.9} onPress={hide}>
               <View>

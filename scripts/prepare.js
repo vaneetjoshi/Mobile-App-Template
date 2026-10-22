@@ -24,6 +24,11 @@ base.expo.android = {
     ? { foregroundImage: './assets/adaptive-icon.png', backgroundImage: './assets/adaptive-background.png' }
     : { foregroundImage: './assets/adaptive-icon.png', backgroundColor: payload.adaptive_background || config.theme.background },
 };
+if (payload.google_services) {
+  fs.writeFileSync('google-services.json', Buffer.from(payload.google_services, 'base64'));
+  base.expo.android.googleServicesFile = './google-services.json';
+  base.expo.plugins.push(['expo-notifications', { color: config.theme.primary }]);
+}
 fs.writeFileSync('app.json', JSON.stringify(base, null, 2));
 
 const signing = {
