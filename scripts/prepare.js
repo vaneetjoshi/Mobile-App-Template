@@ -13,6 +13,7 @@ if (payload.adaptive_background_image) {
 }
 fs.writeFileSync('assets/splash.png', Buffer.from(payload.splash, 'base64'));
 fs.writeFileSync('assets/drawer-logo.png', Buffer.from(payload.drawer_logo || payload.icon, 'base64'));
+fs.writeFileSync('assets/title-image.png', Buffer.from(payload.title_image || payload.icon, 'base64'));
 fs.writeFileSync('app-config.json', JSON.stringify(config));
 
 const base = JSON.parse(fs.readFileSync('app.base.json', 'utf8'));

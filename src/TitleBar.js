@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useInsets } from './insets';
 import { StatusBar } from 'expo-status-bar';
@@ -7,6 +7,8 @@ import { isLight, topColor } from './colors';
 import Surface from './Surface';
 
 const { theme, features } = config;
+const titleImage = require('../assets/title-image.png');
+const showImage = features.title_mode === 'image' && !!(config.title && config.title.custom_image);
 
 export default function TitleBar({ title, onMenu, onRefresh }) {
   const insets = useInsets();
@@ -19,7 +21,11 @@ export default function TitleBar({ title, onMenu, onRefresh }) {
           <Ionicons name="menu" size={26} color={theme.on_primary} />
         </TouchableOpacity>
       </View>
-      <Text numberOfLines={1} style={[s.title, { color: theme.on_primary }]}>{title}</Text>
+      {showImage ? (
+        <Image source={titleImage} resizeMode="contain" style={s.image} />
+      ) : (
+        <Text numberOfLines={1} style={[s.title, { color: theme.on_primary }]}>{title}</Text>
+      )}
       <View style={[s.side, s.right]}>
         {features.title_refresh && (
           <TouchableOpacity onPress={onRefresh} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -36,4 +42,5 @@ const s = StyleSheet.create({
   side: { width: 40, justifyContent: 'center' },
   right: { alignItems: 'flex-end' },
   title: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800' },
+  image: { flex: 1, height: 32 },
 });
