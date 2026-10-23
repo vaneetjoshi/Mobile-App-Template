@@ -38,9 +38,7 @@ if (platform === 'android' && payload.google_services) {
   base.expo.android.googleServicesFile = './google-services.json';
   base.expo.plugins.push(['expo-notifications', { color: config.theme.primary }]);
 }
-if (config.features.biometric) {
-  base.expo.plugins.push(['expo-local-authentication', { faceIDPermission: `Allow ${config.app.name} to use Face ID to unlock the app.` }]);
-}
+base.expo.plugins.push(['expo-local-authentication', { faceIDPermission: `Allow ${config.app.name} to use Face ID to sign in and unlock the app.` }]);
 fs.writeFileSync('app.json', JSON.stringify(base, null, 2));
 
 const signing = {

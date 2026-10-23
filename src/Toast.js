@@ -46,7 +46,7 @@ export function ToastProvider({ children }) {
 }
 
 const s = StyleSheet.create({
-  wrap: { position: 'absolute', top: 0, left: 0, right: 0 },
+  wrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 70 },
   toast: { marginHorizontal: 16, marginTop: 12, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, elevation: 8, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   text: { color: '#ffffff', fontWeight: '600', fontSize: 14 },
 });

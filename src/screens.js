@@ -1,9 +1,11 @@
-import { useContext, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView } from 'react-native-webview';
 import config from '../app-config.json';
 import { BASE, post } from './api';
 import AuthLayout, { Button } from './AuthLayout';
+import * as Biometric from './Biometric';
 import Field from './Field';
 import { InkContext } from './ink';
 import { useInsets } from './insets';
@@ -21,7 +23,7 @@ const landing = (data) => {
   return '/';
 };
 
-const useForm = (validate, request, onDone, review = false) => {
+const useForm = (validate, request, onDone, review = false, onOffline = null) => {
   const toast = useToast();
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
@@ -44,8 +46,12 @@ const useForm = (validate, request, onDone, review = false) => {
       onDone(landing(data));
     } catch (e) {
       const known = e && e.name === 'ApiError';
-      setErrors(known ? Object.fromEntries(Object.entries(e.fields || {})) : {});
-      toast(known ? e.message : `Unexpected error: ${(e && e.message) || 'unknown'}`);
+
+      if (known && e.offline && onOffline) onOffline();
+      else {
+        setErrors(known ? Object.fromEntries(Object.entries(e.fields || {})) : {});
+        toast(known ? e.message : `Unexpected error: ${(e && e.message) || 'unknown'}`);
+      }
     }
     setBusy(false);
   };
@@ -92,6 +98,17 @@ const useChain = (names, onLast) => {
     };
   };
 };
+
+const BioButton = ({ onPress, busy }) => (
+  <TouchableOpacity disabled={busy} activeOpacity={0.8} onPress={onPress} style={[s.bio, { borderColor: theme.link }]}>
+    {busy ? <ActivityIndicator color={theme.link} /> : (
+      <>
+        <Ionicons name="finger-print" size={22} color={theme.link} />
+        <Text style={{ color: theme.link, fontWeight: '800', fontSize: 15, marginLeft: 8 }}>Login with fingerprint / face</Text>
+      </>
+    )}
+  </TouchableOpacity>
+);
 
 const Link = ({ text, onPress }) => (
   <TouchableOpacity onPress={onPress} style={{ alignItems: 'center', marginTop: 18, padding: 6 }}>
@@ -162,9 +179,12 @@ function Review({ visible, rows, busy, onEdit, onConfirm }) {
   );
 }
 
-export function Login({ onDone, onRegister }) {
+export function Login({ onDone, onRegister, onOffline, auto }) {
+  const toast = useToast();
   const [remember, setRemember] = useState(true);
   const [forgot, setForgot] = useState(false);
+  const [bio, setBio] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
   const only = login.identifiers.length === 1 ? login.identifiers[0] : null;
   const identifierField = { name: 'identifier', label: login.label, type: only === 'email' ? 'email' : 'text', autofill: 'username', required: true, rules: { required: true, email: only === 'email', max: 255 } };
   const passwordField = { name: 'password', label: 'Password', type: 'password', required: true, rules: { required: true } };
@@ -172,8 +192,40 @@ export function Login({ onDone, onRegister }) {
     (v) => ({ identifier: validateField(identifierField, v.identifier), password: v.password ? '' : 'Password is required' }),
     (v) => post('/login', { identifier: v.identifier.trim(), password: v.password, remember }),
     onDone,
+    false,
+    onOffline,
   );
   const chain = useChain(['identifier', 'password'], submit);
+
+  const bioLogin = async () => {
+    setBioBusy(true);
+
+    try {
+      const data = await Biometric.login();
+
+      if (data) {
+        toast(data.two_factor ? 'Two-factor verification required.' : 'Welcome!', data.two_factor ? 'info' : 'success');
+        onDone(landing(data));
+      }
+    } catch (e) {
+      const known = e && e.name === 'ApiError';
+
+      if (known && e.offline) onOffline();
+      else {
+        toast(known ? e.message : 'Fingerprint login did not work. Please sign in with your password.');
+        if (known && e.status === 401) setBio(false);
+      }
+    }
+
+    setBioBusy(false);
+  };
+
+  useEffect(() => {
+    Biometric.ready().then((ok) => {
+      setBio(ok);
+      if (ok && auto) bioLogin();
+    });
+  }, []);
 
   return (
     <AuthLayout tokens={login.tokens} title="Welcome back" subtitle={`Sign in to ${app.name}`}>
@@ -183,6 +235,7 @@ export function Login({ onDone, onRegister }) {
         <RememberText />
       </CheckRow>
       <Button label="Login" onPress={submit} busy={busy} shape={login.tokens.button} />
+      {bio && <View style={{ marginTop: 12 }}><BioButton onPress={bioLogin} busy={bioBusy} /></View>}
       <Link text="Forgot password?" onPress={() => setForgot(true)} />
       <Link text="Create an account" onPress={onRegister} />
       <PageModal visible={forgot} title="Reset password" path="/forgot-password" onClose={() => setForgot(false)} />
@@ -206,7 +259,7 @@ const TermsText = ({ title, onOpen }) => {
   );
 };
 
-export function Register({ onDone, onLogin }) {
+export function Register({ onDone, onLogin, onOffline }) {
   const fields = register.fields;
   const terms = register.terms || { enabled: false };
   const [pageOpen, setPageOpen] = useState(false);
@@ -233,6 +286,7 @@ export function Register({ onDone, onLogin }) {
     },
     onDone,
     true,
+    onOffline,
   );
   const tokens = register.tokens;
   const chain = useChain(fields.map((f) => f.name), submit);
@@ -264,6 +318,7 @@ export function Register({ onDone, onLogin }) {
 }
 
 const s = StyleSheet.create({
+  bio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 48, borderRadius: 12, borderWidth: 1.5 },
   checkRow: { flexDirection: 'row', alignItems: 'center' },
   box: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   error: { color: '#dc2626', fontSize: 12, marginTop: 5 },
