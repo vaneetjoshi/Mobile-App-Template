@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Linking, View } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { WebView } from 'react-native-webview';
@@ -8,7 +8,8 @@ import config from './app-config.json';
 import { BASE } from './src/api';
 import { Login, Register } from './src/screens';
 import SplashView from './src/SplashView';
-import { isLight } from './src/colors';
+import { isLight, topColor } from './src/colors';
+import { useInsets } from './src/insets';
 import Offline from './src/Offline';
 import { startPush } from './src/Push';
 import TitleBar from './src/TitleBar';
@@ -20,7 +21,8 @@ const hostOf = (url) => url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '').split(/[/?#]
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export default function App() {
+function Main() {
+  const insets = useInsets();
   const [screen, setScreen] = useState('login');
   const [path, setPath] = useState('/');
   const [splash, setSplash] = useState(true);
@@ -67,16 +69,15 @@ export default function App() {
   const title = features.title_mode === 'custom' && features.title_text ? features.title_text : features.title_mode === 'page' && pageTitle ? pageTitle : config.app.name;
 
   return (
-    <SafeAreaProvider>
     <ToastProvider>
       {screen === 'login' && <Login onDone={open} onRegister={() => setScreen('register')} />}
       {screen === 'register' && <Register onDone={open} onLogin={() => setScreen('login')} />}
       {screen === 'web' && (
-        <SafeAreaView edges={features.title_bar ? ['left', 'right', 'bottom'] : undefined} style={{ flex: 1, backgroundColor: theme.background }}>
+        <View style={{ flex: 1, backgroundColor: theme.background, paddingTop: features.title_bar ? 0 : insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }}>
           {features.title_bar ? (
             <TitleBar title={title} canBack={canBack} onBack={() => web.current && web.current.goBack()} onRefresh={() => { setFailed(false); web.current && web.current.reload(); }} />
           ) : (
-            <StatusBar style={isLight(theme.background) ? 'dark' : 'light'} />
+            <StatusBar style={isLight(topColor(theme.background, theme.background_gradient)) ? 'dark' : 'light'} />
           )}
           <View style={{ flex: 1 }}>
             <WebView
@@ -103,10 +104,17 @@ export default function App() {
             />
             {failed && <Offline onRetry={() => { setFailed(false); web.current && web.current.reload(); }} />}
           </View>
-        </SafeAreaView>
+        </View>
       )}
       {splash && <SplashView onDone={() => setSplash(false)} />}
     </ToastProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Main />
     </SafeAreaProvider>
   );
 }

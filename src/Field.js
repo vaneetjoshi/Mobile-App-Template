@@ -49,7 +49,7 @@ export default function Field({ field, value, onChange, error, variant, align })
   const secure = field.type === 'password';
   const options = field.type === 'select' || field.type === 'radio' ? normalizeOptions(field.options) : null;
   const selected = options && options.find((o) => o.value === String(value));
-  const keyboard = field.type === 'email' ? 'email-address' : field.type === 'number' || field.name === 'mobile' ? (field.name === 'mobile' ? 'phone-pad' : 'numeric') : 'default';
+  const keyboard = field.type === 'email' ? 'email-address' : field.type === 'tel' || field.name === 'mobile' ? 'phone-pad' : field.type === 'number' ? 'numeric' : 'default';
   const framed = !!theme.secondary_gradient && !error && variant !== 'filled';
   const box = [s.box, inputStyle(variant, !!error, ink, framed)];
 
@@ -68,7 +68,8 @@ export default function Field({ field, value, onChange, error, variant, align })
             value={value || ''}
             onChangeText={onChange}
             secureTextEntry={secure && hidden}
-            autoCapitalize={field.type === 'text' && field.name !== 'mobile' ? 'sentences' : 'none'}
+            autoCapitalize={field.name === 'name' ? 'words' : field.type === 'textarea' ? 'sentences' : 'none'}
+            placeholder={field.type === 'date' ? 'YYYY-MM-DD' : undefined}
             autoCorrect={false}
             keyboardType={keyboard}
             multiline={field.type === 'textarea'}

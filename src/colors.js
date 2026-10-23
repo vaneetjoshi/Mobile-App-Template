@@ -10,3 +10,11 @@ const luminance = (hex) => {
 export const isLight = (hex) => luminance(hex) > 0.5;
 
 export const tint = (hex, alpha) => `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
+
+export const topColor = (solid, gradient) => {
+  if (!gradient) return solid;
+  const down = -Math.cos((gradient.angle * Math.PI) / 180);
+  if (down > 0.3) return gradient.colors[0];
+  if (down < -0.3) return gradient.colors[gradient.colors.length - 1];
+  return solid;
+};

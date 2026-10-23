@@ -5,6 +5,7 @@ export const BASE = config.app.url.replace(/\/$/, '');
 export class ApiError extends Error {
   constructor(message, fields = {}, status = 0) {
     super(message);
+    this.name = 'ApiError';
     this.fields = fields;
     this.status = status;
   }
@@ -43,5 +44,5 @@ export const post = async (path, body, retry = true) => {
   if (response.status === 429) throw new ApiError('Too many attempts. Please wait a minute and try again.', {}, 429);
   if (response.status === 419) throw new ApiError('Your session expired. Please try again.', {}, 419);
 
-  throw new ApiError((data && data.message) || 'Something went wrong. Please try again.', {}, response.status);
+  throw new ApiError((data && data.message) || `Something went wrong (code ${response.status}). Please try again.`, {}, response.status);
 };

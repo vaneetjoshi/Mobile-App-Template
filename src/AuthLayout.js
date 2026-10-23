@@ -1,7 +1,7 @@
 import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useInsets } from './insets';
 import { StatusBar } from 'expo-status-bar';
-import { isLight } from './colors';
+import { isLight, topColor } from './colors';
 import config from '../app-config.json';
 import { InkContext, SurfaceContext } from './ink';
 import Surface from './Surface';
@@ -23,7 +23,7 @@ export const Button = ({ label, onPress, busy, shape }) => (
 );
 
 export default function AuthLayout({ tokens, title, subtitle, children }) {
-  const insets = useSafeAreaInsets();
+  const insets = useInsets();
   const brand = tokens.screen === 'brand';
   const surface = theme.card;
   const align = tokens.align === 'center' ? 'center' : 'left';
@@ -41,7 +41,7 @@ export default function AuthLayout({ tokens, title, subtitle, children }) {
   const inCard = tokens.container !== 'plain';
   const titleColor = inCard ? theme.card_text : onScreen;
   const sheet = tokens.container === 'sheet';
-  const behind = inHeader || brand ? theme.primary : theme.background;
+  const behind = inHeader || brand ? topColor(theme.primary, theme.primary_gradient) : topColor(theme.background, theme.background_gradient);
 
   return (
     <Surface color={brand ? theme.primary : theme.background} gradient={brand ? theme.primary_gradient : theme.background_gradient} style={s.screen}>

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useInsets } from './insets';
 
 const ToastContext = createContext(() => {});
 
@@ -9,6 +9,7 @@ export const useToast = () => useContext(ToastContext);
 const COLORS = { error: '#dc2626', success: '#16a34a', info: '#2563eb' };
 
 export function ToastProvider({ children }) {
+  const insets = useInsets();
   const [toast, setToast] = useState(null);
   const slide = useRef(new Animated.Value(-120)).current;
   const timer = useRef(null);
@@ -30,7 +31,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={show}>
       {children}
       {toast && (
-        <SafeAreaView edges={['top', 'left', 'right']} pointerEvents="box-none" style={s.wrap}>
+        <View pointerEvents="box-none" style={[s.wrap, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
           <Animated.View style={[s.toast, { backgroundColor: COLORS[toast.type], transform: [{ translateY: slide }] }]}>
             <TouchableOpacity activeOpacity={0.9} onPress={hide}>
               <View>
@@ -38,7 +39,7 @@ export function ToastProvider({ children }) {
               </View>
             </TouchableOpacity>
           </Animated.View>
-        </SafeAreaView>
+        </View>
       )}
     </ToastContext.Provider>
   );
