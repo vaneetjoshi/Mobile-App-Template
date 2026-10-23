@@ -16,7 +16,7 @@ import Offline from './src/Offline';
 import { startPush } from './src/Push';
 import TitleBar from './src/TitleBar';
 import { ToastProvider, useToast } from './src/Toast';
-import { UpdateRequired, useUpdate } from './src/Update';
+import { UpdateScreen, useUpdate } from './src/Update';
 
 const { theme, features, app } = config;
 
@@ -353,7 +353,7 @@ function Main() {
       )}
       {offline && <Offline onRetry={retry} busy={checking} />}
       {lockOn && locked && screen === 'web' && <Lock onUnlock={() => setLocked(false)} />}
-      {update && <UpdateRequired onUpdate={update} />}
+      {update && <UpdateScreen update={update} />}
       {splash && <SplashView onDone={() => setSplash(false)} />}
     </View>
   );

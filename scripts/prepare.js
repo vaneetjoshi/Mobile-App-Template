@@ -35,6 +35,9 @@ base.expo.android = {
     ? { foregroundImage: './assets/adaptive-icon.png', backgroundImage: './assets/adaptive-background.png' }
     : { foregroundImage: './assets/adaptive-icon.png', backgroundColor: payload.adaptive_background || config.theme.background },
 };
+if (platform === 'android' && config.features.update_check && !config.features.update_url) {
+  base.expo.android.permissions = ['android.permission.REQUEST_INSTALL_PACKAGES'];
+}
 if (platform === 'android' && payload.google_services) {
   fs.writeFileSync('google-services.json', Buffer.from(payload.google_services, 'base64'));
   base.expo.android.googleServicesFile = './google-services.json';
