@@ -46,7 +46,7 @@ const clean = (value) => String(value || '').split(/[?#]/)[0].replace(/\/+$/, ''
 const active = (item, current) => (item.path ? clean(item.path) === clean(current) : item.children.some((child) => active(child, current)));
 
 function Row({ item, depth, current, onSelect }) {
-  const color = theme.on_primary;
+  const color = theme.on_drawer;
   const [open, setOpen] = useState(null);
   const group = item.children.length > 0;
   const here = active(item, current);
@@ -74,7 +74,7 @@ export default function Drawer({ visible, items, current, lockSupported, lockOn,
   const panelWidth = Math.min(320, Math.round(width * 0.82));
   const progress = useRef(new Animated.Value(0)).current;
   const closeRef = useRef(onClose);
-  const color = theme.on_primary;
+  const color = theme.on_drawer;
 
   closeRef.current = onClose;
 
@@ -98,7 +98,7 @@ export default function Drawer({ visible, items, current, lockSupported, lockOn,
         {...pan.panHandlers}
         style={[s.panel, { width: panelWidth, transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-panelWidth, 0] }) }] }]}
       >
-        <Surface color={theme.primary} gradient={theme.primary_gradient} style={{ flex: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 8, paddingLeft: 14 + insets.left }}>
+        <Surface color={theme.drawer} gradient={theme.drawer_gradient} style={{ flex: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 8, paddingLeft: 14 + insets.left }}>
           <View style={s.head}>
             <Image source={logo} style={s.logo} />
             <Text numberOfLines={2} style={[s.name, { color }]}>{app.name}</Text>
