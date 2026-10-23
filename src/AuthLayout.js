@@ -1,4 +1,4 @@
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useInsets } from './insets';
 import { StatusBar } from 'expo-status-bar';
 import { isLight, topColor } from './colors';
@@ -47,8 +47,8 @@ export default function AuthLayout({ tokens, title, subtitle, children }) {
     <Surface color={brand ? theme.primary : theme.background} gradient={brand ? theme.primary_gradient : theme.background_gradient} style={s.screen}>
     <View style={[s.screen, { paddingTop: inHeader ? 0 : insets.top, paddingBottom: sheet ? 0 : insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }]}>
       <StatusBar style={isLight(behind) ? 'dark' : 'light'} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.flex}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[s.scroll, tokens.container === 'sheet' && s.scrollSheet]}>
+      <KeyboardAvoidingView behavior="padding" style={s.flex}>
+        <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" automaticallyAdjustKeyboardInsets contentContainerStyle={[s.scroll, tokens.container === 'sheet' && s.scrollSheet]}>
           {inHeader && (
             <Surface color={theme.primary} gradient={theme.primary_gradient} style={[s.header, tokens.header === 'curve' && s.headerCurve, { paddingTop: insets.top + 28 }]}>
               <Text style={[s.headerTitle, { color: theme.on_primary }]}>{title}</Text>

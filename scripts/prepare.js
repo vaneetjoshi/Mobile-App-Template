@@ -2,6 +2,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const payload = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const platform = process.argv[3] || 'android';
 const { config } = payload;
 
 fs.mkdirSync('assets', { recursive: true });
@@ -15,19 +16,30 @@ fs.writeFileSync('app-config.json', JSON.stringify(config));
 
 const base = JSON.parse(fs.readFileSync('app.base.json', 'utf8'));
 base.expo.name = config.app.name;
+base.expo.version = `1.0.${config.app.build_number}`;
 base.expo.slug = config.app.package_id.replace(/\./g, '-');
 base.expo.icon = './assets/icon.png';
 base.expo.plugins = [['expo-splash-screen', { backgroundColor: config.splash.background }]];
+base.expo.ios = {
+  bundleIdentifier: config.app.package_id,
+  buildNumber: String(config.app.build_number),
+  supportsTablet: true,
+  infoPlist: { ITSAppUsesNonExemptEncryption: false },
+};
 base.expo.android = {
   package: config.app.package_id,
+  versionCode: config.app.build_number,
   adaptiveIcon: payload.adaptive_background_image
     ? { foregroundImage: './assets/adaptive-icon.png', backgroundImage: './assets/adaptive-background.png' }
     : { foregroundImage: './assets/adaptive-icon.png', backgroundColor: payload.adaptive_background || config.theme.background },
 };
-if (payload.google_services) {
+if (platform === 'android' && payload.google_services) {
   fs.writeFileSync('google-services.json', Buffer.from(payload.google_services, 'base64'));
   base.expo.android.googleServicesFile = './google-services.json';
   base.expo.plugins.push(['expo-notifications', { color: config.theme.primary }]);
+}
+if (config.features.biometric) {
+  base.expo.plugins.push(['expo-local-authentication', { faceIDPermission: `Allow ${config.app.name} to use Face ID to unlock the app.` }]);
 }
 fs.writeFileSync('app.json', JSON.stringify(base, null, 2));
 

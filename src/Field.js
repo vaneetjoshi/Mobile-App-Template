@@ -17,6 +17,21 @@ const inputStyle = (variant, hasError, ink, framed) => {
   return { borderWidth: framed ? 0 : 1, borderColor: border, borderRadius: 10 };
 };
 
+const AUTOFILL = {
+  username: ['username', 'username'],
+  password: ['current-password', 'password'],
+  new: ['new-password', 'newPassword'],
+  email: ['email', 'emailAddress'],
+  tel: ['tel', 'telephoneNumber'],
+  name: ['name', 'name'],
+};
+
+const autofill = (field) => {
+  const key = field.autofill || (field.type === 'password' ? 'password' : field.type === 'email' ? 'email' : field.type === 'tel' || field.name === 'mobile' ? 'tel' : field.name === 'name' ? 'name' : null);
+
+  return key ? { autoComplete: AUTOFILL[key][0], textContentType: AUTOFILL[key][1] } : { autoComplete: 'off' };
+};
+
 const GRADIENT_BORDER = 1.5;
 
 function Frame({ variant, framed, surface, children }) {
@@ -41,7 +56,7 @@ function Frame({ variant, framed, surface, children }) {
   );
 }
 
-export default function Field({ field, value, onChange, error, variant, align }) {
+export default function Field({ field, value, onChange, error, variant, align, inputRef, returnKeyType, onSubmitEditing }) {
   const ink = useContext(InkContext) || theme.text;
   const surface = useContext(SurfaceContext) || theme.background;
   const [hidden, setHidden] = useState(true);
@@ -65,6 +80,7 @@ export default function Field({ field, value, onChange, error, variant, align })
       ) : (
         <View style={[...box, s.row]}>
           <TextInput
+            ref={inputRef}
             value={value || ''}
             onChangeText={onChange}
             secureTextEntry={secure && hidden}
@@ -73,6 +89,10 @@ export default function Field({ field, value, onChange, error, variant, align })
             autoCorrect={false}
             keyboardType={keyboard}
             multiline={field.type === 'textarea'}
+            returnKeyType={field.type === 'textarea' ? undefined : returnKeyType}
+            submitBehavior={returnKeyType === 'next' ? 'submit' : 'blurAndSubmit'}
+            onSubmitEditing={field.type === 'textarea' ? undefined : onSubmitEditing}
+            {...autofill(field)}
             placeholderTextColor={tint(ink, 0.4)}
             style={[s.input, { color: ink }]}
           />

@@ -10,9 +10,18 @@ on:
       fetch_url:
         required: true
         type: string
+      android:
+        required: false
+        type: string
+        default: 'true'
+      ios:
+        required: false
+        type: string
+        default: 'false'
 
 jobs:
-  build:
+  android:
+    if: ${{ inputs.android == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -31,7 +40,7 @@ jobs:
           echo "::add-mask::$(jq -r .upload_token payload.json)"
           echo "::add-mask::$(jq -r .keystore_password payload.json)"
       - name: Prepare app
-        run: node scripts/prepare.js payload.json
+        run: node scripts/prepare.js payload.json android
       - run: npm ci
       - run: npx expo prebuild --platform android --no-install
       - name: Configure signing
@@ -52,3 +61,33 @@ jobs:
           if [ -f generated.jks ]; then upload "keystore=@generated.jks"; fi
           upload "apk=@$APK"
           upload "aab=@$AAB"
+
+  ios:
+    if: ${{ inputs.ios == 'true' }}
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Fetch build payload
+        run: |
+          curl -fsS "${{ inputs.fetch_url }}" -o payload.json
+          echo "::add-mask::$(jq -r .upload_token payload.json)"
+          echo "::add-mask::$(jq -r '.apple.password // empty' payload.json)"
+      - name: Prepare app
+        run: node scripts/prepare.js payload.json ios
+      - run: npm ci
+      - run: npx expo prebuild --platform ios --no-install
+      - name: Install pods
+        working-directory: ios
+        run: pod install
+      - name: Build
+        run: node scripts/ios-build.js payload.json
+      - name: Upload result
+        run: |
+          UPLOAD_URL=$(jq -r .upload_url payload.json)
+          ls -lh app.ipa
+          curl -sS --fail-with-body --retry 3 --retry-delay 5 --retry-all-errors -F "ipa=@app.ipa" "$UPLOAD_URL"

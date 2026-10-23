@@ -1,15 +1,12 @@
 import { Platform } from 'react-native';
 import config from '../app-config.json';
+import { post } from './api';
 
 const { push } = config;
 
 const register = async (token) => {
   try {
-    await fetch(push.register_url, {
-      method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ app_key: push.app_key, token }),
-    });
+    await post('/mobile-app/device', { app_key: push.app_key, token });
   } catch (e) {}
 };
 

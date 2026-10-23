@@ -1,5 +1,5 @@
-import { useContext, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useContext, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import config from '../app-config.json';
 import { BASE, post } from './api';
@@ -71,6 +71,28 @@ const useForm = (validate, request, onDone, review = false) => {
   return { form, errors, busy, change, submit, send, reviewing, closeReview: () => setReviewing(false) };
 };
 
+const useChain = (names, onLast) => {
+  const refs = useRef({});
+
+  return (name) => {
+    const index = names.indexOf(name);
+    const last = index === names.length - 1;
+
+    return {
+      inputRef: (node) => {
+        refs.current[name] = node;
+      },
+      returnKeyType: last ? 'done' : 'next',
+      onSubmitEditing: () => {
+        const next = names.slice(index + 1).find((candidate) => refs.current[candidate]);
+
+        if (next) refs.current[next].focus();
+        else onLast();
+      },
+    };
+  };
+};
+
 const Link = ({ text, onPress }) => (
   <TouchableOpacity onPress={onPress} style={{ alignItems: 'center', marginTop: 18, padding: 6 }}>
     <Text style={{ color: theme.link, fontWeight: '700' }}>{text}</Text>
@@ -105,7 +127,9 @@ function PageModal({ visible, title, path, onClose }) {
             <Text style={{ color: theme.link, fontWeight: '800', fontSize: 15 }}>Close</Text>
           </TouchableOpacity>
         </View>
-        <WebView source={{ uri: `${BASE}${path}` }} startInLoadingState />
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <WebView source={{ uri: `${BASE}${path}` }} startInLoadingState />
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -139,25 +163,29 @@ function Review({ visible, rows, busy, onEdit, onConfirm }) {
 }
 
 export function Login({ onDone, onRegister }) {
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [forgot, setForgot] = useState(false);
   const only = login.identifiers.length === 1 ? login.identifiers[0] : null;
-  const identifierField = { name: 'identifier', label: login.label, type: only === 'email' ? 'email' : 'text', required: true, rules: { required: true, email: only === 'email', max: 255 } };
+  const identifierField = { name: 'identifier', label: login.label, type: only === 'email' ? 'email' : 'text', autofill: 'username', required: true, rules: { required: true, email: only === 'email', max: 255 } };
   const passwordField = { name: 'password', label: 'Password', type: 'password', required: true, rules: { required: true } };
   const { form, errors, busy, change, submit } = useForm(
     (v) => ({ identifier: validateField(identifierField, v.identifier), password: v.password ? '' : 'Password is required' }),
     (v) => post('/login', { identifier: v.identifier.trim(), password: v.password, remember }),
     onDone,
   );
+  const chain = useChain(['identifier', 'password'], submit);
 
   return (
     <AuthLayout tokens={login.tokens} title="Welcome back" subtitle={`Sign in to ${app.name}`}>
-      <Field field={identifierField} value={form.identifier} onChange={change('identifier')} error={errors.identifier} variant={login.tokens.input} align={login.tokens.align} />
-      <Field field={passwordField} value={form.password} onChange={change('password')} error={errors.password} variant={login.tokens.input} align={login.tokens.align} />
+      <Field field={identifierField} value={form.identifier} onChange={change('identifier')} error={errors.identifier} variant={login.tokens.input} align={login.tokens.align} {...chain('identifier')} />
+      <Field field={passwordField} value={form.password} onChange={change('password')} error={errors.password} variant={login.tokens.input} align={login.tokens.align} {...chain('password')} />
       <CheckRow checked={remember} onChange={setRemember}>
         <RememberText />
       </CheckRow>
       <Button label="Login" onPress={submit} busy={busy} shape={login.tokens.button} />
+      <Link text="Forgot password?" onPress={() => setForgot(true)} />
       <Link text="Create an account" onPress={onRegister} />
+      <PageModal visible={forgot} title="Reset password" path="/forgot-password" onClose={() => setForgot(false)} />
     </AuthLayout>
   );
 }
@@ -207,6 +235,7 @@ export function Register({ onDone, onLogin }) {
     true,
   );
   const tokens = register.tokens;
+  const chain = useChain(fields.map((f) => f.name), submit);
 
   const display = (f) => {
     const value = form[f.name];
@@ -219,7 +248,7 @@ export function Register({ onDone, onLogin }) {
   return (
     <AuthLayout tokens={tokens} title="Create account" subtitle={`Join ${app.name}`}>
       {fields.map((f) => (
-        <Field key={f.name} field={f} value={form[f.name]} onChange={change(f.name)} error={errors[f.name]} variant={tokens.input} align={tokens.align} />
+        <Field key={f.name} field={f.type === 'password' ? { ...f, autofill: 'new' } : f} value={form[f.name]} onChange={change(f.name)} error={errors[f.name]} variant={tokens.input} align={tokens.align} {...chain(f.name)} />
       ))}
       {terms.enabled && (
         <CheckRow checked={!!form.terms} onChange={change('terms')} error={errors.terms}>
