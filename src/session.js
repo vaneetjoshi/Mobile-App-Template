@@ -25,10 +25,10 @@ export const probeSession = async () => {
   }
 };
 
-export const needsGuard = (url) => {
+export const needsGuard = (url, wentBack = false) => {
   if (!url.startsWith(BASE)) return false;
 
   const path = url.slice(BASE.length) || '/';
 
-  return !AUTH_PATH.test(path) && !SAFE_PATH.test(path);
+  return !AUTH_PATH.test(path) && (wentBack || !SAFE_PATH.test(path));
 };

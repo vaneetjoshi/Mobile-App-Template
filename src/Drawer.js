@@ -7,7 +7,13 @@ import { useInsets } from './insets';
 import Surface from './Surface';
 
 const { theme, app } = config;
-const logo = require('../assets/icon.png');
+const drawer = config.drawer || {};
+const icon = require('../assets/icon.png');
+const customLogo = require('../assets/drawer-logo.png');
+const mark = drawer.custom_logo ? customLogo : icon;
+const source = Image.resolveAssetSource(mark);
+const ratio = source && source.height ? source.width / source.height : 1;
+const showName = drawer.show_name !== false;
 
 const ICONS = [
   [/dashboard|home|overview/, 'speedometer-outline'],
@@ -46,18 +52,19 @@ const clean = (value) => String(value || '').split(/[?#]/)[0].replace(/\/+$/, ''
 const active = (item, current) => (item.path ? clean(item.path) === clean(current) : item.children.some((child) => active(child, current)));
 
 function Row({ item, depth, current, onSelect }) {
-  const color = theme.on_drawer;
   const [open, setOpen] = useState(null);
   const group = item.children.length > 0;
   const here = active(item, current);
   const expanded = open === null ? here : open;
+  const marked = here && !group;
+  const color = marked ? theme.on_drawer_active : theme.on_drawer;
 
   return (
     <View>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => (group ? setOpen(!expanded) : onSelect(item))}
-        style={[s.row, { marginLeft: depth * 14, backgroundColor: here && !group ? tint(color, 0.2) : 'transparent' }]}
+        style={[s.row, { marginLeft: depth * 14, backgroundColor: marked ? theme.drawer_active : 'transparent' }]}
       >
         <Ionicons name={depth ? 'ellipse' : iconFor(item)} size={depth ? 6 : 21} color={color} style={depth ? s.dot : s.icon} />
         <Text numberOfLines={1} style={[s.label, { color, fontWeight: here ? '800' : '600', fontSize: depth ? 14 : 15 }]}>{item.label}</Text>
@@ -77,6 +84,16 @@ export default function Drawer({ visible, items, current, lockSupported, lockOn,
   const color = theme.on_drawer;
 
   closeRef.current = onClose;
+
+  const headInk = theme.drawer_header ? theme.on_drawer_header : color;
+  const headStyle = [s.head, { paddingTop: insets.top + 20, paddingLeft: 14 + insets.left }];
+  const logoWidth = showName || !drawer.custom_logo ? 52 : Math.min(52 * ratio, panelWidth - 40);
+  const brand = (
+    <>
+      <Image source={mark} resizeMode={drawer.custom_logo ? 'contain' : 'cover'} style={{ width: logoWidth, height: 52, borderRadius: drawer.custom_logo ? 0 : 14, marginRight: showName ? 12 : 0 }} />
+      {showName && <Text numberOfLines={2} style={[s.name, { color: headInk }]}>{app.name}</Text>}
+    </>
+  );
 
   useEffect(() => {
     Animated.timing(progress, { toValue: visible ? 1 : 0, duration: 230, useNativeDriver: true }).start();
@@ -98,26 +115,29 @@ export default function Drawer({ visible, items, current, lockSupported, lockOn,
         {...pan.panHandlers}
         style={[s.panel, { width: panelWidth, transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-panelWidth, 0] }) }] }]}
       >
-        <Surface color={theme.drawer} gradient={theme.drawer_gradient} style={{ flex: 1, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 8, paddingLeft: 14 + insets.left }}>
-          <View style={s.head}>
-            <Image source={logo} style={s.logo} />
-            <Text numberOfLines={2} style={[s.name, { color }]}>{app.name}</Text>
-          </View>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingRight: 12, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
-            {items.map((item) => <Row key={item.id} item={item} depth={0} current={current} onSelect={onSelect} />)}
-          </ScrollView>
-          <View style={[s.foot, { borderColor: tint(color, 0.25) }]}>
-            {lockSupported && (
-              <View style={s.row}>
-                <Ionicons name="finger-print" size={21} color={color} style={s.icon} />
-                <Text style={[s.label, { color, fontWeight: '600' }]}>Fingerprint / face login</Text>
-                <Switch value={lockOn} onValueChange={onToggleLock} trackColor={{ true: tint(color, 0.55), false: tint(color, 0.25) }} thumbColor={color} />
-              </View>
-            )}
-            <TouchableOpacity activeOpacity={0.7} onPress={onLogout} style={s.row}>
-              <Ionicons name="log-out-outline" size={21} color={color} style={s.icon} />
-              <Text style={[s.label, { color, fontWeight: '600' }]}>Logout</Text>
-            </TouchableOpacity>
+        <Surface color={theme.drawer} gradient={theme.drawer_gradient} style={{ flex: 1 }}>
+          {theme.drawer_header ? (
+            <Surface color={theme.drawer_header} gradient={theme.drawer_header_gradient} style={headStyle}>{brand}</Surface>
+          ) : (
+            <View style={headStyle}>{brand}</View>
+          )}
+          <View style={{ flex: 1, paddingTop: 8, paddingBottom: insets.bottom + 8, paddingLeft: 14 + insets.left }}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingRight: 12, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
+              {items.map((item) => <Row key={item.id} item={item} depth={0} current={current} onSelect={onSelect} />)}
+            </ScrollView>
+            <View style={[s.foot, { borderColor: tint(color, 0.25) }]}>
+              {lockSupported && (
+                <View style={s.row}>
+                  <Ionicons name="finger-print" size={21} color={color} style={s.icon} />
+                  <Text style={[s.label, { color, fontWeight: '600' }]}>Fingerprint / face login</Text>
+                  <Switch value={lockOn} onValueChange={onToggleLock} trackColor={{ true: tint(color, 0.55), false: tint(color, 0.25) }} thumbColor={color} />
+                </View>
+              )}
+              <TouchableOpacity activeOpacity={0.7} onPress={onLogout} style={s.row}>
+                <Ionicons name="log-out-outline" size={21} color={color} style={s.icon} />
+                <Text style={[s.label, { color, fontWeight: '600' }]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Surface>
       </Animated.View>
@@ -128,8 +148,7 @@ export default function Drawer({ visible, items, current, lockSupported, lockOn,
 const s = StyleSheet.create({
   layer: { zIndex: 40 },
   panel: { position: 'absolute', top: 0, bottom: 0, left: 0, elevation: 16, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 4, height: 0 } },
-  head: { flexDirection: 'row', alignItems: 'center', paddingRight: 14, paddingBottom: 18 },
-  logo: { width: 52, height: 52, borderRadius: 14, marginRight: 12 },
+  head: { flexDirection: 'row', alignItems: 'center', paddingRight: 14, paddingBottom: 16 },
   name: { flex: 1, fontSize: 18, fontWeight: '800' },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 46, paddingHorizontal: 12, borderRadius: 12, marginBottom: 2 },
   icon: { width: 30 },

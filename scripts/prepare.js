@@ -12,6 +12,7 @@ if (payload.adaptive_background_image) {
   fs.writeFileSync('assets/adaptive-background.png', Buffer.from(payload.adaptive_background_image, 'base64'));
 }
 fs.writeFileSync('assets/splash.png', Buffer.from(payload.splash, 'base64'));
+fs.writeFileSync('assets/drawer-logo.png', Buffer.from(payload.drawer_logo || payload.icon, 'base64'));
 fs.writeFileSync('app-config.json', JSON.stringify(config));
 
 const base = JSON.parse(fs.readFileSync('app.base.json', 'utf8'));
@@ -38,7 +39,9 @@ if (platform === 'android' && payload.google_services) {
   base.expo.android.googleServicesFile = './google-services.json';
   base.expo.plugins.push(['expo-notifications', { color: config.theme.primary }]);
 }
-base.expo.plugins.push(['expo-local-authentication', { faceIDPermission: `Allow ${config.app.name} to use Face ID to sign in and unlock the app.` }]);
+if (config.features.biometric) {
+  base.expo.plugins.push(['expo-local-authentication', { faceIDPermission: `Allow ${config.app.name} to use Face ID to sign in and unlock the app.` }]);
+}
 fs.writeFileSync('app.json', JSON.stringify(base, null, 2));
 
 const signing = {

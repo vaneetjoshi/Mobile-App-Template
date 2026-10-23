@@ -52,6 +52,7 @@ function Main() {
   const lockOnRef = useRef(false);
   const offered = useRef(false);
   const guarding = useRef(false);
+  const wentBack = useRef(false);
   const offlineRef = useRef(false);
   const update = useUpdate();
 
@@ -127,6 +128,7 @@ function Main() {
       }
 
       if (screen === 'web' && canGoBack.current) {
+        wentBack.current = true;
         web.current.goBack();
         return true;
       }
@@ -319,7 +321,10 @@ function Main() {
 
                   if (nav.loading) return;
 
-                  if (needsGuard(nav.url)) guard();
+                  const back = wentBack.current;
+                  wentBack.current = false;
+
+                  if (needsGuard(nav.url, back)) guard();
 
                   if (nav.url.startsWith(BASE) && !AUTH_PATH.test(nav.url.slice(BASE.length) || '/')) offerFingerprint();
                 }}
