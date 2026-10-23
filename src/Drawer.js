@@ -13,7 +13,6 @@ const customLogo = require('../assets/drawer-logo.png');
 const mark = drawer.custom_logo ? customLogo : icon;
 const source = Image.resolveAssetSource(mark);
 const ratio = source && source.height ? source.width / source.height : 1;
-const showName = drawer.show_name !== false;
 
 const ICONS = [
   [/dashboard|home|overview/, 'speedometer-outline'],
@@ -87,11 +86,12 @@ export default function Drawer({ visible, items, current, lockSupported, lockOn,
 
   const headInk = theme.drawer_header ? theme.on_drawer_header : color;
   const headStyle = [s.head, { paddingTop: insets.top + 20, paddingLeft: 14 + insets.left }];
-  const logoWidth = showName || !drawer.custom_logo ? 52 : Math.min(52 * ratio, panelWidth - 40);
-  const brand = (
+  const brand = drawer.custom_logo ? (
+    <Image source={mark} resizeMode="contain" style={{ width: Math.min(56 * ratio, panelWidth - 28 - insets.left), height: 56 }} />
+  ) : (
     <>
-      <Image source={mark} resizeMode={drawer.custom_logo ? 'contain' : 'cover'} style={{ width: logoWidth, height: 52, borderRadius: drawer.custom_logo ? 0 : 14, marginRight: showName ? 12 : 0 }} />
-      {showName && <Text numberOfLines={2} style={[s.name, { color: headInk }]}>{app.name}</Text>}
+      <Image source={mark} resizeMode="cover" style={{ width: 52, height: 52, borderRadius: 14, marginRight: 12 }} />
+      <Text numberOfLines={2} style={[s.name, { color: headInk }]}>{app.name}</Text>
     </>
   );
 
